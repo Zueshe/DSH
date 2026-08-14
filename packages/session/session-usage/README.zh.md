@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-「使用统计」设置页背后的双面包：Host 半区把各会话日志中 provider 上报的 token 用量聚合起来，以只读的同源 JSON 路由提供；浏览器半区渲染设置页 section 并拉取该路由。一次查询同时给出时间区间（近 7 / 14 / 30 天，或自定义起止日期）与按任务明细（每个会话一行，含 LLM 生成的标题）。
+「使用统计」界面背后的双面包：Host 半区把各会话日志中 provider 上报的 token 用量聚合起来，以只读的同源 JSON 路由提供；浏览器半区渲染设置页 section 与一个侧边栏页脚入口，二者都会拉取该路由。一次查询同时给出时间区间（近 7 / 14 / 30 天，或自定义起止日期）与按任务明细（每个会话一行，含 LLM 生成的标题）。
 
 ## 聚合语义
 
@@ -19,7 +19,7 @@
   name: '@deepseek-ai/dsh-session-usage'
 ```
 
-仅注册在 `dsh-web-app` bundle 中。Host 半区读取 `sessionQuery`（由 base bundle 中的 `session-query-sqlite` 提供），并在已挂载的 `webServer` 上注册 `/api/session-usage` 路由；没有 webServer 时不注册任何东西。`dsh.client` 清单驱动浏览器半区的设置 section。
+仅注册在 `dsh-web-app` bundle 中。Host 半区读取 `sessionQuery`（由 base bundle 中的 `session-query-sqlite` 提供），并在已挂载的 `webServer` 上注册 `/api/session-usage` 路由；没有 webServer 时不注册任何东西。`dsh.client` 清单驱动浏览器半区的设置 section 与其 `sidebar.footer.action` 条目，二者共享同一个控制器。
 
 ## Model Experience
 

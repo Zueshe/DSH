@@ -1,21 +1,11 @@
 {
-  "extends": "../../../tsconfig.base.client.json",
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "lib/types"
-  },
-  "include": [
-    "src"
-  ],
+  "files": [],
   "references": [
-    { "path": "../../../vendor/cordis" },
-    { "path": "../../core/session" },
-    { "path": "../../session-query/session-query" },
-    { "path": "../../host/webserver" },
-    { "path": "../../runtime-diagnostics/invariants" },
-    { "path": "../../client/locale" },
-    { "path": "../../client/runtime" },
-    { "path": "../../client/ui-settings" },
-    { "path": "../../client/ui-slots" }
+    {
+      "path": "./tsconfig.host.json"
+    },
+    {
+      "path": "./tsconfig.client.json"
+    }
   ]
 }

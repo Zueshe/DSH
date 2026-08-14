@@ -15,7 +15,7 @@ Status: implemented
 交付一个仅注册在 `dsh-web-app` bundle 中的双面包 `packages/session/session-usage`（`@deepseek-ai/dsh-session-usage`）：
 
 1. **Host 半区。** 通过既有 `sessionQuery` 服务读取持久化语料库（`listSessions` → 逐会话 `readSession` → `readTitleSnapshots`），在闭区间内折叠 `assistant/message` 事件里的 provider 用量，并在已挂载的 `webServer`（`ctx.get('webServer')`，可选 —— 无 webServer 时本包不做任何事）上注册只读同源 JSON 路由 `/api/session-usage`。单会话读取失败被隔离并计入 `failedSessions`；标题折叠尽力而为。
-2. **浏览器半区。** 注册 `settings.section` 条目（`id: 'usage-stats'`），组件通过一个小控制器拉取路由，渲染时间区间（近 7 / 14 / 30 天或自定义日期对）、汇总卡片（总/输入/输出/缓存读取/缓存写入 tokens、请求数、会话数）、按天柱状列表、以及带搜索过滤的按任务表格。文案经 locale 服务注册（中/英）。
+2. **浏览器半区。** 注册 `settings.section` 条目（`id: 'usage-stats'`），组件通过一个小控制器拉取路由，渲染时间区间（近 7 / 14 / 30 天或自定义日期对）、汇总卡片（总/输入/输出/缓存读取/缓存写入 tokens、请求数、会话数）、按天柱状列表、以及带搜索过滤的按任务表格。文案经 locale 服务注册（中/英）。该 section 与一个 `sidebar.footer.action` 条目（`id: 'usage-stats'`）共享同一份展示主体与同一个控制器：设置座上方新增页脚触发器，点击弹出渲染同一主体的独立弹窗，任何界面无需进入设置即可查看用量。主体是共享的 `UsagePanel` 组件，section 与页脚入口都是它的薄包装。
 
 聚合拆成纯折叠（`aggregate.ts`，直接单测）与语料驱动（`query.ts`，用假的 `SessionQueryEngine` 测试）；路由与其区间解析位于 `index.ts`。
 
@@ -24,6 +24,7 @@ Status: implemented
 ## 后果
 
 - 设置页只出现在 web-app 组合中；其他界面没有用量路由或 section。
+- 侧边栏页脚入口为任何界面提供一键直达用量，代价是新增一个导航座，与 section 共用同一个 id（`usage-stats`）——两者分属不同槽位，因此无需避免重名。
 - 每次浏览用量都是 O(语料库) —— 每次请求都会读取并折叠全部会话日志，带有限并行度（`SESSION_USAGE_READ_CONCURRENCY = 6`）。当前语料库约 5 秒返回；大规模部署日后可能需要增量投影。
 - 路由刻意放在 `/api` RPC 信封之外 —— 与 `/api/session.export` 一样是物理无信封 GET，因此新增它没有触碰 `IApiClient`/api-proxy 契约。
 
@@ -32,7 +33,7 @@ Status: implemented
 - 纯折叠测试：桶求和、区间过滤、防御性畸形用量、空日志、报告装配排序、日期键。
 - 针对假引擎的语料驱动测试：空语料、标题附加、晚于区间末创建的会话被跳过且不读取、失败读取计数、标题失败被包含。
 - 路由解析测试与客户端控制器测试（URL 形态、2xx 解析、非 2xx 报错）。
-- 组件测试（jsdom）：卡片/按天/按任务渲染、错误呈现、空状态、搜索收窄、`resolveRange` 计算。
+- 组件测试（jsdom）：卡片/按天/按任务渲染、错误呈现、空状态、搜索收窄、`resolveRange` 计算，以及页脚入口（触发器标签、弹窗打开、经关闭按钮/遮罩/Escape 关闭）。
 
 ## 备选方案
 

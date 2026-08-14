@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-Dual-face package behind the web **Usage Statistics** settings page: the Host half aggregates provider-reported token usage across the durable session corpus and serves it as a read-only same-origin JSON route; the browser half renders the settings section that fetches it. Time ranges (last 7 / 14 / 30 days, or a custom pair of dates) and a per-task breakdown (one row per session with its LLM-generated title) come out of one query.
+Dual-face package behind the web **Usage Statistics** surface: the Host half aggregates provider-reported token usage across the durable session corpus and serves it as a read-only same-origin JSON route; the browser half renders the settings section and a sidebar footer action that both fetch it. Time ranges (last 7 / 14 / 30 days, or a custom pair of dates) and a per-task breakdown (one row per session with its LLM-generated title) come out of one query.
 
 ## Aggregation semantics
 
@@ -19,7 +19,7 @@ Dual-face package behind the web **Usage Statistics** settings page: the Host ha
   name: '@deepseek-ai/dsh-session-usage'
 ```
 
-Registered only in the `dsh-web-app` bundle. The Host half reads `sessionQuery` (provided by `session-query-sqlite` in the base bundle) and registers the `/api/session-usage` route on a mounted `webServer`; without a webServer it contributes nothing. The `dsh.client` manifest drives the browser half's settings section.
+Registered only in the `dsh-web-app` bundle. The Host half reads `sessionQuery` (provided by `session-query-sqlite` in the base bundle) and registers the `/api/session-usage` route on a mounted `webServer`; without a webServer it contributes nothing. The `dsh.client` manifest drives the browser half's settings section and its `sidebar.footer.action` entry, both sharing one controller.
 
 ## Model Experience
 

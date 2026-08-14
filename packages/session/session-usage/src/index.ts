@@ -7,6 +7,7 @@
  * @module @deepseek-ai/dsh-session-usage
  */
 
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Context } from '@deepseek-ai/cordis'
 import type { WebRoute } from '@deepseek-ai/dsh-host-webserver'
 import { collectUsageReport } from './query.ts'
@@ -19,15 +20,6 @@ export const name = 'session-usage'
 export const inject = ['webServer']
 
 const ROUTE_PATH = '/api/session-usage'
-
-/** Minimal URL reader the route handler needs from the node request. */
-interface UsageRequest { url?: string }
-
-/** Minimal response writer the route handler needs from the node response. */
-interface UsageResponse {
-  writeHead(status: number, headers?: Record<string, string>): void
-  end(body?: string): void
-}
 
 /**
  * Parse a bounded `from`/`to` range from a request URL.
@@ -53,7 +45,7 @@ export function apply(ctx: Context): void {
   const route: WebRoute = {
     kind: 'exact',
     path: ROUTE_PATH,
-    handler: async (req: UsageRequest, res: UsageResponse) => {
+    handler: async (req: IncomingMessage, res: ServerResponse) => {
       const range = parseUsageRange(new URL(req.url ?? '/', 'http://dsh.local'))
       if (range === undefined) {
         res.writeHead(400, { 'content-type': 'text/plain' })

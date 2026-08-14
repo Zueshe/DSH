@@ -15,7 +15,7 @@ A first attempt delivered the page as a dynamic Cordis plugin (a `settings.secti
 Ship a dual-face package `packages/session/session-usage` (`@deepseek-ai/dsh-session-usage`) registered only in the `dsh-web-app` bundle:
 
 1. **Host half.** Reads the durable corpus through the existing `sessionQuery` service (`listSessions` → `readSession` per session → `readTitleSnapshots`), folds provider usage from `assistant/message` events inside the inclusive range, and registers a read-only same-origin JSON route `/api/session-usage` on a mounted `webServer` (`ctx.get('webServer')`, optional — without a webServer the package contributes nothing). Per-session read failures are isolated and counted as `failedSessions`; title folds are best-effort.
-2. **Browser half.** A `settings.section` entry (`id: 'usage-stats'`) whose component fetches the route through a small controller, renders range presets (7/14/30 days or a custom date pair), summary cards (total/input/output/cache-read/cache-write tokens, requests, sessions), a per-day bar list, and a per-task table with a search filter. Copy is registered through the locale service (zh/en).
+2. **Browser half.** A `settings.section` entry (`id: 'usage-stats'`) whose component fetches the route through a small controller, renders range presets (7/14/30 days or a custom date pair), summary cards (total/input/output/cache-read/cache-write tokens, requests, sessions), a per-day bar list, and a per-task table with a search filter. Copy is registered through the locale service (zh/en). The section shares the presentation body and one controller with a `sidebar.footer.action` entry (`id: 'usage-stats'`): a footer trigger above the Settings seat that opens an independent popup rendering the same body, so usage is reachable from any surface without opening Settings. The body is the shared `UsagePanel` component; the section and the footer action are thin wrappers over it.
 
 The aggregation is split into pure folds (`aggregate.ts`, unit-tested directly) and a corpus driver (`query.ts`, tested against a fake `SessionQueryEngine`); the route and its range parsing live in `index.ts`.
 
@@ -24,6 +24,7 @@ The aggregation is split into pure folds (`aggregate.ts`, unit-tested directly) 
 ## Consequences
 
 - The settings page appears only in web-app assemblies; other surfaces have no usage route or section.
+- The sidebar footer entry gives any surface a one-click route to usage, at the cost of a second nav seat sharing the same section id (`usage-stats`) across two slots — the ids need not collide because each lives in its own slot.
 - Browsing usage is O(corpus) per query — every session log is read and folded on each request, with bounded parallelism (`SESSION_USAGE_READ_CONCURRENCY = 6`). The current corpus answers in ~5s; large deployments may want an incremental projection later.
 - The route is intentionally outside the `/api` RPC envelope — it is a physical no-envelope GET, like `/api/session.export`, so adding it did not touch the `IApiClient`/api-proxy contract.
 
@@ -32,7 +33,7 @@ The aggregation is split into pure folds (`aggregate.ts`, unit-tested directly) 
 - Pure fold tests: bucket sums, range filtering, defensive malformed usage, empty logs, report assembly ordering, date keys.
 - Corpus driver tests against a fake engine: empty corpus, titles attached, sessions created after the range skipped without reads, failed reads counted, title failures contained.
 - Route parsing tests and client controller tests (URL shape, 2xx parse, non-2xx error).
-- Component tests (jsdom): cards/day/task rendering, error surface, empty state, search narrowing, `resolveRange` math.
+- Component tests (jsdom): cards/day/task rendering, error surface, empty state, search narrowing, `resolveRange` math, and the footer action (trigger label, popup open, close via close button / mask / Escape).
 
 ## Alternatives considered
 

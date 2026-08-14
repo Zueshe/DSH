@@ -29,6 +29,7 @@ export const zh = {
   empty: '所选时间段内没有使用记录',
   search: '搜索任务…',
   refresh: '刷新',
+  'footer.close': '关闭使用统计',
 } as const
 
 /** English Usage Statistics strings. */
@@ -58,6 +59,7 @@ export const en: Record<keyof typeof zh, string> = {
   empty: 'No usage in the selected period',
   search: 'Search tasks…',
   refresh: 'Refresh',
+  'footer.close': 'Close usage statistics',
 }
 
 /** Stable locale keys consumed by the Usage Statistics section. */
