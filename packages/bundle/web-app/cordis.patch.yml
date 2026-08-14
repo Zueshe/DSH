@@ -84,6 +84,11 @@
     - id: session-stats
       name: '@deepseek-ai/dsh-session-stats'
 
+    # Usage Statistics: the session-usage aggregation route plus its browser
+    # settings section (the dsh.client manifest drives the browser roster).
+    - id: session-usage
+      name: '@deepseek-ai/dsh-session-usage'
+
     # Resolve bind host, SSH launch, and display once at boot, then mount the
     # matching dual-face directory picker. Mount -native or -browse directly in
     # an overlay to pin the interaction.

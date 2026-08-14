@@ -1,0 +1,204 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 4px 24px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.subtitle {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preset {
+  padding: 5px 12px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.preset:hover {
+  border-color: var(--dsw-alias-border-l2);
+}
+
+.presetActive {
+  border-color: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-brand-primary);
+  background: var(--dsw-alias-bg-base);
+}
+
+.refresh {
+  padding: 5px 12px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.input {
+  padding: 5px 10px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.card {
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1);
+  padding: 10px 12px;
+}
+
+.cardLabel {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+}
+
+.cardValue {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blockTitle {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.days {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.dayLabel {
+  width: 88px;
+  flex: none;
+  color: var(--dsw-alias-label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dayTrack {
+  flex: 1;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--dsw-alias-bg-layer-1);
+  overflow: hidden;
+}
+
+.dayFill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--dsw-alias-brand-primary);
+}
+
+.dayValue {
+  width: 90px;
+  flex: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dayMeta {
+  width: 90px;
+  flex: none;
+  text-align: right;
+  color: var(--dsw-alias-label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.search {
+  max-width: 260px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th,
+.table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  text-align: left;
+}
+
+.table th {
+  color: var(--dsw-alias-label-secondary);
+  font-weight: 500;
+}
+
+.num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.taskCell {
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.error {
+  color: var(--dsw-alias-state-error-primary);
+  white-space: pre-wrap;
+}
+
+.empty {
+  color: var(--dsw-alias-label-secondary);
+  padding: 12px 0;
+}
