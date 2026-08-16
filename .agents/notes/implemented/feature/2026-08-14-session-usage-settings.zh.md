@@ -14,7 +14,7 @@ Status: implemented
 
 交付一个仅注册在 `dsh-web-app` bundle 中的双面包 `packages/session/session-usage`（`@deepseek-ai/dsh-session-usage`）：
 
-1. **Host 半区。** 通过既有 `sessionQuery` 服务读取持久化语料库（`listSessions` → 逐会话 `readSession` → `readTitleSnapshots`），在闭区间内折叠 `assistant/message` 事件里的 provider 用量，并在已挂载的 `webServer`（`ctx.get('webServer')`，可选 —— 无 webServer 时本包不做任何事）上注册只读同源 JSON 路由 `/api/session-usage`。单会话读取失败被隔离并计入 `failedSessions`；标题折叠尽力而为。
+1. **Host 半区。** 通过既有 `sessionQuery` 服务读取持久化语料库（`listSessions` → 逐会话 `readSession`，标题在同一次读取中折叠），在闭区间内折叠 `assistant/message` 事件里的 provider 用量，并在已挂载的 `webServer`（`ctx.get('webServer')`，可选 —— 无 webServer 时本包不做任何事）上注册只读同源 JSON 路由 `/api/session-usage`。单会话读取失败被隔离并计入 `failedSessions`；标题折叠尽力而为。
 2. **浏览器半区。** 注册 `settings.section` 条目（`id: 'usage-stats'`），组件通过一个小控制器拉取路由，渲染时间区间（近 7 / 14 / 30 天或自定义日期对）、汇总卡片（总/输入/输出/缓存读取/缓存写入 tokens、请求数、会话数、缓存命中率）、按天柱状列表、按模型表格、以及带搜索过滤的按任务表格。文案经 locale 服务注册（中/英）。该 section 与一个 `sidebar.footer.action` 条目（`id: 'usage-stats'`）共享同一份展示主体与同一个控制器：设置座上方新增页脚触发器，点击弹出渲染同一主体的独立弹窗，任何界面无需进入设置即可查看用量。主体是共享的 `UsagePanel` 组件，section 与页脚入口都是它的薄包装。
 
 聚合拆成纯折叠（`aggregate.ts`，直接单测）与语料驱动（`query.ts`，用假的 `SessionQueryEngine` 测试）；路由与其区间解析位于 `index.ts`。
@@ -25,7 +25,7 @@ Status: implemented
 
 - 设置页只出现在 web-app 组合中；其他界面没有用量路由或 section。
 - 侧边栏页脚入口为任何界面提供一键直达用量，代价是新增一个导航座，与 section 共用同一个 id（`usage-stats`）——两者分属不同槽位，因此无需避免重名。
-- 每次浏览用量都是 O(语料库) —— 每次请求都会读取并折叠全部会话日志，带有限并行度（`SESSION_USAGE_READ_CONCURRENCY = 6`）。当前语料库约 5 秒返回；大规模部署日后可能需要增量投影。
+- 浏览用量时每个日志至多在每个存储日志修订下读取一次：重复查询与区间切换直接在缓存的逐请求样本上重折叠，只有变化的日志与活跃会话才以有限并行度（`SESSION_USAGE_READ_CONCURRENCY = 6`）重读 —— 见[修订门控样本缓存 note](../architecture/2026-08-16-session-usage-revision-gated-sample-cache.md)。Host 启动后的首次查询仍会扫描一次区间内语料。
 - 路由刻意放在 `/api` RPC 信封之外 —— 与 `/api/session.export` 一样是物理无信封 GET，因此新增它没有触碰 `IApiClient`/api-proxy 契约。
 
 ## 测试
@@ -47,6 +47,6 @@ Status: implemented
 
 ## 风险
 
-**每次查询线性扫描语料库。** 大型语料库下这是主要成本；有界池保持单会话有界，报告保持正确。投影缓存是自然的后续步骤，但在出现真实需求前刻意不做。
+**冷启动与变化日志的读取线性增长。** Host 启动后的首次查询会读取每个区间内日志一次，每个存储日志变化也会重读该日志；有界池保持单会话有界，报告保持正确。修订门控的进程内缓存（[后续 note](../architecture/2026-08-16-session-usage-revision-gated-sample-cache.md)）覆盖重复查询；若重启频率让冷启动变得重要，持久化检查点缓存仍是后续路径。
 
 **按主机本地日期分桶。** 日界线跟随主机时区，GUI 与主机时区不一致时按主机日历分桶；已记录为已知限制。

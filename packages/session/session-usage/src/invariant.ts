@@ -20,9 +20,11 @@ export const inject = ['invariants']
  * `assistant/message` carrying the step's `usage` is emitted and validated by
  * `dsh-agent-loop`, contiguous seqs and header compatibility are enforced by
  * the session and persistence layers, and title folding is validated by
- * `dsh-session-title`. A failure in any of those relations surfaces as a
- * per-session read error that the query isolates and counts rather than
- * throwing, so there is no package-owned runtime state to assert here.
+ * `dsh-session-title`. The sample cache is derived state whose freshness is
+ * delegated to the persistence layer's revision tokens, so it owns no
+ * relation to assert either. A failure in any of those relations surfaces as
+ * a per-session read error that the query isolates and counts rather than
+ * throwing.
  */
 const install: InvariantInstaller = () => {}
 

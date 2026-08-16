@@ -6384,9 +6384,15 @@ importers:
       '@deepseek-ai/dsh-session':
         specifier: workspace:^
         version: link:../../core/session
+      '@deepseek-ai/dsh-session-persistence':
+        specifier: workspace:^
+        version: link:../session-persistence
       '@deepseek-ai/dsh-session-query':
         specifier: workspace:^
         version: link:../../session-query/session-query
+      '@deepseek-ai/dsh-session-title':
+        specifier: workspace:^
+        version: link:../session-title
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31

@@ -9,10 +9,11 @@ Dual-face package behind the web **Usage Statistics** surface: the Host half agg
 - **Token source.** Each `assistant/message` event carries the step's `TokenUsage` when the adapter reported accounting. The fold counts exactly those events whose timestamp lands inside the inclusive `[from, to]` range and sums four disjoint buckets: uncached input, output, cache-read, and cache-write. `total` is the disjoint sum of all four, matching the `token-meter` billing convention.
 - **Cache hit rate.** The summary card derives it as `cacheRead / (input + cacheRead)` over the range totals — the share of prompt tokens served from cache — rendered as a percentage after the output card; a range with no input shows a dash.
 - **Defensive reads.** Malformed or missing usage fields fold as zero, mirroring the `session-stats` guard.
+- **Repeat-query reuse.** Each read log reduces to compact per-request samples (timestamp, provider-model identity, four token counts) held in a host-process cache gated by the persistence backend's per-log revision (`listSnapshots()`): a session whose stored log changed re-reads, unchanged sessions refold any range over cached samples, and titles fold in the same read. Live sessions always re-read, because their in-memory tail can outgrow the persisted revision.
 - **Per-day buckets** use the host-local calendar date of each counted event, so a session spanning midnight splits across two dates.
 - **Per-model rows** bucket each counted event by its assistant message's `source` identity - `provider` plus `model`, so two providers serving the same model id stay separate - and unreadable identity fields fold into one `unknown/unknown` row. Rows merge across sessions and sort by `total` descending.
 - **Per-task rows** are sessions with at least one counted request, titled from the latest `session/title` event (`null` when the log has none), sorted by `total` descending.
-- **Failure isolation.** Per-session log reads and title folds are isolated: a failed read increments `failedSessions` and the rest of the report still resolves; `scanned` reports how many sessions the corpus listed.
+- **Failure isolation.** Per-session log reads are isolated: a failed read increments `failedSessions` and the rest of the report still resolves; `scanned` reports how many sessions the corpus listed.
 
 ## Composition
 
@@ -21,7 +22,7 @@ Dual-face package behind the web **Usage Statistics** surface: the Host half agg
   name: '@deepseek-ai/dsh-session-usage'
 ```
 
-Registered only in the `dsh-web-app` bundle. The Host half reads `sessionQuery` (provided by `session-query-sqlite` in the base bundle) and registers the `/api/session-usage` route on a mounted `webServer`; without a webServer it contributes nothing. The `dsh.client` manifest drives the browser half's settings section and its `sidebar.footer.action` entry, both sharing one controller.
+Registered only in the `dsh-web-app` bundle. The Host half reads `sessionQuery` (provided by `session-query-sqlite` in the base bundle) and, when the optional `sessionPersistence` service is mounted, gates its sample cache on `listSnapshots()` revisions so repeat queries skip unchanged logs; it registers the `/api/session-usage` route on a mounted `webServer`, and without a webServer it contributes nothing. The `dsh.client` manifest drives the browser half's settings section and its `sidebar.footer.action` entry, both sharing one controller.
 
 ## Model Experience
 
@@ -34,5 +35,6 @@ None; the package never assembles or sends provider requests.
 ## Known Limitations and Deferred Work
 
 - **Reported usage only** — steps whose provider reported no `usage` record are invisible, so a cache that does not surface token accounting shows less than the true cost.
+- **First query after host start scans once** — the sample cache is process-local, so the first query after the host starts reads every in-range log once; repeat queries and range switches then reuse the samples.
 - **Host-local date buckets** — day boundaries follow the host time zone, not the browser's, so a deployment whose GUI and host differ in time zone buckets the edges of a day under the host calendar.
 - **Mounted only in the web-app bundle** — other assemblies serve no usage route and no settings section.

@@ -1,6 +1,7 @@
 /**
- * Pure fold: `assistant/message` usage inside the range becomes per-session
- * token totals, local-date buckets, and provider-model buckets; out-of-range,
+ * Pure fold: `extractUsageSamples` reduces a log to its counted requests and
+ * `foldSessionSamples` turns samples inside the range into per-session token
+ * totals, local-date buckets, and provider-model buckets; out-of-range,
  * usage-less, and non-message events are ignored; malformed usage fields fold
  * as zero and unreadable model identities fold as unknown; the report
  * assembly sums across sessions and sorts day, model, and task rows.
@@ -9,7 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import {
-  buildUsageReport, dayKey, foldSessionUsage, usageModelIdentity, usageToken,
+  buildUsageReport, dayKey, extractUsageSamples, foldSessionSamples, usageModelIdentity, usageToken,
   type SessionUsageFold,
 } from '../src/aggregate.ts'
 
@@ -41,7 +42,7 @@ function dayEvent(time: number, usage: UsageRecord): SessionEvent {
 }
 
 function fold(...events: SessionEvent[]): SessionUsageFold {
-  const tokens = foldSessionUsage(events, FROM, TO)
+  const tokens = foldSessionSamples(extractUsageSamples(events), FROM, TO)
   return {
     sessionId: 's',
     createdAt: FROM,
@@ -83,7 +84,26 @@ describe('usageModelIdentity', () => {
   })
 })
 
-describe('foldSessionUsage', () => {
+describe('extractUsageSamples', () => {
+  it('keeps one zero-valued sample per usage-carrying event and drops the rest', () => {
+    const samples = extractUsageSamples([
+      usageEvent(FROM + 1000, { inputTokens: 10, outputTokens: 4, cacheReadTokens: 2, cacheWriteTokens: 1 }),
+      usageEvent(FROM + 2000),
+      { type: 'tool/result', seq: 1, time: FROM + 500, data: {} } as unknown as SessionEvent,
+      usageEvent(FROM + 3000, { inputTokens: Number.NaN, outputTokens: -2 }),
+    ])
+    expect(samples).toEqual([
+      { time: FROM + 1000, provider: 'mock', model: 'mock', input: 10, output: 4, cacheRead: 2, cacheWrite: 1 },
+      { time: FROM + 3000, provider: 'mock', model: 'mock', input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    ])
+  })
+  it('reads unreadable identities as unknown at extraction time', () => {
+    const samples = extractUsageSamples([usageEvent(FROM + 1000, { inputTokens: 1 }, null)])
+    expect(samples[0]).toMatchObject({ provider: 'unknown', model: 'unknown' })
+  })
+})
+
+describe('foldSessionSamples', () => {
   it('folds zero on an empty log', () => {
     const f = fold()
     expect(f.requests).toBe(0)
@@ -113,6 +133,20 @@ describe('foldSessionUsage', () => {
     )
     expect(f.requests).toBe(0)
     expect(f.total).toBe(0)
+  })
+  it('refolds one extracted sample set exactly over shifting ranges', () => {
+    // The cache-reuse contract: samples of one log refold any later range
+    // query (a panel switch from 7d to 14d) without re-reading the log.
+    const samples = extractUsageSamples([
+      dayEvent(FROM - 3 * 24 * 60 * 60 * 1000, { inputTokens: 5 }),
+      dayEvent(FROM + 1000, { inputTokens: 7 }),
+    ])
+    const narrow = foldSessionSamples(samples, FROM, TO)
+    const wide = foldSessionSamples(samples, FROM - 7 * 24 * 60 * 60 * 1000, TO)
+    expect(narrow.input).toBe(7)
+    expect(narrow.requests).toBe(1)
+    expect(wide.input).toBe(12)
+    expect(wide.requests).toBe(2)
   })
   it('ignores usage-less assistant messages and non-message events', () => {
     const noUsage = usageEvent(FROM + 1000)

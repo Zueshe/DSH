@@ -2,7 +2,9 @@
  * Usage Statistics host plugin: exposes the session-usage aggregation as a
  * same-origin JSON route the browser settings section fetches. The route is
  * read-only and registered only when a `webServer` is mounted; the corpus
- * reads go through the existing `sessionQuery` service.
+ * reads go through the existing `sessionQuery` service, with an optional
+ * `sessionPersistence` backend gating a fiber-owned sample cache so repeat
+ * queries skip unchanged logs.
  *
  * @module @deepseek-ai/dsh-session-usage
  */
@@ -10,6 +12,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Context } from '@deepseek-ai/cordis'
 import type { WebRoute } from '@deepseek-ai/dsh-host-webserver'
+import { UsageSessionCache } from './cache.ts'
 import { collectUsageReport } from './query.ts'
 import type { UsageRange } from './types.ts'
 
@@ -42,6 +45,10 @@ export function parseUsageRange(url: URL): UsageRange | undefined {
  * @param ctx - Host context carrying the injected `webServer` and `sessionQuery`.
  */
 export function apply(ctx: Context): void {
+  // One row store per fiber: repeat queries reuse samples of unchanged logs,
+  // and disposing the plugin drops every row with it.
+  const cache = new UsageSessionCache()
+  ctx.effect(() => () => { cache.dispose() }, 'session-usage: sample cache')
   const route: WebRoute = {
     kind: 'exact',
     path: ROUTE_PATH,
@@ -59,7 +66,8 @@ export function apply(ctx: Context): void {
         return
       }
       try {
-        const report = await collectUsageReport(query, range)
+        const persistence = ctx.get('sessionPersistence')
+        const report = await collectUsageReport(query, range, persistence === undefined ? { cache } : { persistence, cache })
         res.writeHead(200, {
           'content-type': 'application/json',
           'cache-control': 'no-store',

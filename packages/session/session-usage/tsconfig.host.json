@@ -9,6 +9,7 @@
     "src/index.ts",
     "src/query.ts",
     "src/aggregate.ts",
+    "src/cache.ts",
     "src/types.ts",
     "src/invariant.ts"
   ],
@@ -20,7 +21,13 @@
       "path": "../../core/session"
     },
     {
+      "path": "../../session/session-persistence"
+    },
+    {
       "path": "../../session-query/session-query"
+    },
+    {
+      "path": "../../session/session-title"
     },
     {
       "path": "../../host/webserver"

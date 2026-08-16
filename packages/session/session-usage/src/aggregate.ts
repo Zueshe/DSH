@@ -1,13 +1,21 @@
 /**
- * Pure folds for the session-usage domain: per-session token totals and the
- * whole-report assembly. No service or storage dependency — every input is an
- * owned value so unit tests can drive the fold with fixture logs.
+ * Pure folds for the session-usage domain: per-request sample extraction,
+ * per-session token totals over one range, and the whole-report assembly. No
+ * service or storage dependency — every input is an owned value so unit tests
+ * can drive the fold with fixture logs.
  *
  * Provider usage is read from `assistant/message` events exactly the way
  * `session-stats` guards them: finite non-negative numbers only, malformed
  * fields fold as zero. The billed-input convention matches `token-meter`:
  * input + cacheRead + cacheWrite, plus output, so `total` is the disjoint sum
  * of all four buckets.
+ *
+ * The fold is two stages on purpose: {@link extractUsageSamples} reduces a
+ * log to the compact per-request facts (timestamp, identity, four token
+ * counts) that a repeat query can cache per session, and
+ * {@link foldSessionSamples} refolds any `[from, to]` range over those
+ * samples exactly — samples carry millisecond timestamps, so a cached session
+ * never changes range semantics.
  *
  * @module @deepseek-ai/dsh-session-usage/aggregate
  */
@@ -19,6 +27,20 @@ import type { UsageDayRow, UsageModelRow, UsageReport, UsageTotals, UsageTaskRow
 export interface UsageModelIdentity {
   provider: string
   model: string
+}
+
+/** One counted request: everything the range fold needs, nothing else from the log. */
+export interface UsageSample {
+  /** Event timestamp, Unix epoch milliseconds. */
+  time: number
+  /** Provider route that produced the message; `'unknown'` when unreadable. */
+  provider: string
+  /** Provider model id that produced the message; `'unknown'` when unreadable. */
+  model: string
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
 }
 
 /** Per-session fold of one log over one range. */
@@ -111,14 +133,41 @@ export function dayKey(time: number): string {
 }
 
 /**
- * Fold one session log into token totals for the inclusive range. Only
- * `assistant/message` events carrying a usage record inside `[from, to]` count.
+ * Reduce one session log to its counted-request samples. Exactly
+ * `assistant/message` events carrying a usage record produce a sample — even
+ * one whose four fields all fold as zero still counts as a request.
  * @param events - complete raw session log.
+ * @returns one sample per counted event, in log order.
+ */
+export function extractUsageSamples(events: readonly SessionEvent[]): UsageSample[] {
+  const samples: UsageSample[] = []
+  for (const event of events) {
+    if (event.type !== 'assistant/message') continue
+    const usage = event.data.usage
+    if (usage === undefined) continue
+    const identity = usageModelIdentity(event.data.message.source)
+    samples.push({
+      time: event.time,
+      provider: identity.provider,
+      model: identity.model,
+      input: usageToken(usage.inputTokens),
+      output: usageToken(usage.outputTokens),
+      cacheRead: usageToken(usage.cacheReadTokens),
+      cacheWrite: usageToken(usage.cacheWriteTokens),
+    })
+  }
+  return samples
+}
+
+/**
+ * Fold one session's samples into token totals for the inclusive range: only
+ * samples whose timestamp lands inside `[from, to]` count.
+ * @param samples - one session's counted requests (from {@link extractUsageSamples} or a cache row).
  * @param from - inclusive lower bound, Unix epoch milliseconds.
  * @param to - inclusive upper bound, Unix epoch milliseconds.
  * @returns the token totals, per-day buckets, and per-model buckets.
  */
-export function foldSessionUsage(events: readonly SessionEvent[], from: number, to: number): SessionUsageTokens {
+export function foldSessionSamples(samples: readonly UsageSample[], from: number, to: number): SessionUsageTokens {
   let input = 0
   let output = 0
   let cacheRead = 0
@@ -126,21 +175,18 @@ export function foldSessionUsage(events: readonly SessionEvent[], from: number, 
   let requests = 0
   const byDay = new Map<string, UsageDayRow>()
   const byModel = new Map<string, UsageModelRow>()
-  for (const event of events) {
-    if (event.type !== 'assistant/message') continue
-    const usage = event.data.usage
-    if (usage === undefined) continue
-    if (event.time < from || event.time > to) continue
-    const i = usageToken(usage.inputTokens)
-    const o = usageToken(usage.outputTokens)
-    const cr = usageToken(usage.cacheReadTokens)
-    const cw = usageToken(usage.cacheWriteTokens)
+  for (const sample of samples) {
+    if (sample.time < from || sample.time > to) continue
+    const i = sample.input
+    const o = sample.output
+    const cr = sample.cacheRead
+    const cw = sample.cacheWrite
     input += i
     output += o
     cacheRead += cr
     cacheWrite += cw
     requests += 1
-    const date = dayKey(event.time)
+    const date = dayKey(sample.time)
     const day = byDay.get(date) ?? { ...EMPTY_DAY, date }
     day.input += i
     day.output += o
@@ -149,7 +195,7 @@ export function foldSessionUsage(events: readonly SessionEvent[], from: number, 
     day.requests += 1
     day.total += i + o + cr + cw
     byDay.set(date, day)
-    const identity = usageModelIdentity(event.data.message.source)
+    const identity: UsageModelIdentity = { provider: sample.provider, model: sample.model }
     const key = modelKey(identity)
     const modelRow = byModel.get(key) ?? { ...EMPTY_MODEL, ...identity }
     modelRow.input += i
