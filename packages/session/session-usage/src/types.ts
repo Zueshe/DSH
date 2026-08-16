@@ -42,6 +42,20 @@ export interface UsageDayRow {
   total: number
 }
 
+/** One provider-model identity with its token figures over the queried range. */
+export interface UsageModelRow {
+  /** Provider route that produced the counted messages. */
+  provider: string
+  /** Provider model id that produced the counted messages. */
+  model: string
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  total: number
+  requests: number
+}
+
 /** One session (task) with its token figures over the queried range. */
 export interface UsageTaskRow {
   /** Durable session id. */
@@ -65,6 +79,8 @@ export interface UsageReport {
   totals: UsageTotals
   /** Local-date buckets, ascending. */
   byDay: UsageDayRow[]
+  /** Provider-model identities with usage, descending by total. */
+  byModel: UsageModelRow[]
   /** Sessions with usage, descending by total. */
   byTask: UsageTaskRow[]
   /** Sessions whose log read failed and were skipped. */

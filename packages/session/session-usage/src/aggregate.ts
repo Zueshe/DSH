@@ -13,7 +13,13 @@
  */
 
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import type { UsageDayRow, UsageReport, UsageTotals, UsageTaskRow } from './types.ts'
+import type { UsageDayRow, UsageModelRow, UsageReport, UsageTotals, UsageTaskRow } from './types.ts'
+
+/** Identity read from one counted event's message source; `'unknown'` marks unreadable fields. */
+export interface UsageModelIdentity {
+  provider: string
+  model: string
+}
 
 /** Per-session fold of one log over one range. */
 export interface SessionUsageFold {
@@ -29,6 +35,8 @@ export interface SessionUsageFold {
   requests: number
   /** Local-date buckets within the fold. */
   byDay: Map<string, UsageDayRow>
+  /** Provider-model buckets within the fold, keyed by `provider/model`. */
+  byModel: Map<string, UsageModelRow>
 }
 
 /** Token-only portion of a fold, produced without session identity. */
@@ -40,6 +48,8 @@ export interface SessionUsageTokens {
   requests: number
   /** Local-date buckets, keyed by `YYYY-MM-DD`. */
   byDay: Map<string, UsageDayRow>
+  /** Provider-model buckets, keyed by `provider/model`. */
+  byModel: Map<string, UsageModelRow>
 }
 
 /** Validated input for {@link buildUsageReport}. */
@@ -55,6 +65,29 @@ export interface UsageReportAssembly {
 }
 
 const EMPTY_DAY: UsageDayRow = { date: '', input: 0, output: 0, cacheRead: 0, cacheWrite: 0, requests: 0, total: 0 }
+
+const EMPTY_MODEL: Omit<UsageModelRow, 'provider' | 'model'> = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, requests: 0, total: 0 }
+
+const UNKNOWN_MODEL = 'unknown'
+
+/** Map key separating two providers that serve the same model id. */
+function modelKey(identity: UsageModelIdentity): string {
+  return `${identity.provider}/${identity.model}`
+}
+
+/**
+ * Read one counted event's provider/model identity defensively from its
+ * assistant message source: only string fields count.
+ * @param source - `AssistantMessage.source` of a counted event.
+ * @returns the identity; unreadable fields read as `'unknown'`.
+ */
+export function usageModelIdentity(source: unknown): UsageModelIdentity {
+  const fields = source as { provider?: unknown; model?: unknown } | null | undefined
+  return {
+    provider: typeof fields?.provider === 'string' ? fields.provider : UNKNOWN_MODEL,
+    model: typeof fields?.model === 'string' ? fields.model : UNKNOWN_MODEL,
+  }
+}
 
 /**
  * Read one token-count field defensively: only finite non-negative numbers count.
@@ -83,7 +116,7 @@ export function dayKey(time: number): string {
  * @param events - complete raw session log.
  * @param from - inclusive lower bound, Unix epoch milliseconds.
  * @param to - inclusive upper bound, Unix epoch milliseconds.
- * @returns the token totals and per-day buckets.
+ * @returns the token totals, per-day buckets, and per-model buckets.
  */
 export function foldSessionUsage(events: readonly SessionEvent[], from: number, to: number): SessionUsageTokens {
   let input = 0
@@ -92,6 +125,7 @@ export function foldSessionUsage(events: readonly SessionEvent[], from: number, 
   let cacheWrite = 0
   let requests = 0
   const byDay = new Map<string, UsageDayRow>()
+  const byModel = new Map<string, UsageModelRow>()
   for (const event of events) {
     if (event.type !== 'assistant/message') continue
     const usage = event.data.usage
@@ -115,17 +149,28 @@ export function foldSessionUsage(events: readonly SessionEvent[], from: number, 
     day.requests += 1
     day.total += i + o + cr + cw
     byDay.set(date, day)
+    const identity = usageModelIdentity(event.data.message.source)
+    const key = modelKey(identity)
+    const modelRow = byModel.get(key) ?? { ...EMPTY_MODEL, ...identity }
+    modelRow.input += i
+    modelRow.output += o
+    modelRow.cacheRead += cr
+    modelRow.cacheWrite += cw
+    modelRow.requests += 1
+    modelRow.total += i + o + cr + cw
+    byModel.set(key, modelRow)
   }
-  return { input, output, cacheRead, cacheWrite, requests, byDay }
+  return { input, output, cacheRead, cacheWrite, requests, byDay, byModel }
 }
 
 /**
  * Assemble the whole-range report from per-session folds.
  * @param input - range, folds, titles, and corpus figures.
- * @returns a detached report with ascending day rows and total-descending task rows.
+ * @returns a detached report with ascending day rows and total-descending model and task rows.
  */
 export function buildUsageReport(input: UsageReportAssembly): UsageReport {
   const byDay = new Map<string, UsageDayRow>()
+  const byModel = new Map<string, UsageModelRow>()
   const totals: UsageTotals = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0, requests: 0, sessions: 0 }
   for (const fold of input.folds) {
     if (fold.requests === 0) continue
@@ -145,6 +190,16 @@ export function buildUsageReport(input: UsageReportAssembly): UsageReport {
       agg.requests += day.requests
       agg.total += day.total
       byDay.set(date, agg)
+    }
+    for (const [key, row] of fold.byModel) {
+      const agg = byModel.get(key) ?? { ...EMPTY_MODEL, provider: row.provider, model: row.model }
+      agg.input += row.input
+      agg.output += row.output
+      agg.cacheRead += row.cacheRead
+      agg.cacheWrite += row.cacheWrite
+      agg.requests += row.requests
+      agg.total += row.total
+      byModel.set(key, agg)
     }
   }
   const byTask: UsageTaskRow[] = input.folds
@@ -166,6 +221,7 @@ export function buildUsageReport(input: UsageReportAssembly): UsageReport {
     to: input.to,
     totals,
     byDay: [...byDay.values()].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)),
+    byModel: [...byModel.values()].sort((a, b) => b.total - a.total),
     byTask,
     failedSessions: input.failedSessions,
     scanned: input.scanned,

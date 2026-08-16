@@ -6,6 +6,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { UsageStatsController } from './controller.ts'
+import { ConnectPhoneFooterAction, type ConnectPhoneFooterActionInjected, type ConnectPhoneLink } from './ConnectPhoneFooterAction.tsx'
 import { en, NS, zh, type UsageKey } from './locales.ts'
 import { UsageFooterAction, type UsageFooterActionInjected } from './UsageFooterAction.tsx'
 import { UsageSection, type UsageSectionInjected } from './UsageSection.tsx'
@@ -49,4 +50,33 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
     inject: footerInjected,
   }, UsageFooterAction))
+  // Connect Phone rides the same footer row above the Usage Statistics entry.
+  // It mints a mobile pairing link through the dsh-remote-web-ui /api/pair/issue
+  // contract; unavailable without that plugin's tunnel or a LAN bind.
+  const connectPhoneInjected = (): ConnectPhoneFooterActionInjected => ({
+    issue: async (): Promise<ConnectPhoneLink> => {
+      const response = await fetch('/api/pair/issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const data: unknown = await response.json()
+      if (typeof data !== 'object' || data === null) throw new Error('invalid pairing response')
+      const body = data as { ok?: unknown; url?: unknown; expiresAt?: unknown }
+      if (body.ok !== true || typeof body.url !== 'string') throw new Error('invalid pairing response')
+      return {
+        url: body.url,
+        expiresAt: typeof body.expiresAt === 'number' ? body.expiresAt : 0,
+      }
+    },
+  })
+  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
+    name: 'sidebar.footer.action',
+    id: 'connect-phone',
+    order: -1,
+    label: () => ctx.locale.bind(NS)('connect.nav'),
+    locale: NS,
+    inject: connectPhoneInjected,
+  }, ConnectPhoneFooterAction))
 }

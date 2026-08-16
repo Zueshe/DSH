@@ -155,10 +155,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.search {
-  max-width: 260px;
-}
-
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -182,8 +178,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-.taskCell {
-  max-width: 340px;
+.modelCell {
+  max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

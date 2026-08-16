@@ -1,11 +1,12 @@
 /**
  * Usage Statistics presentation: range presets, summary cards, a per-day bar
- * list, and a per-task table with a search filter. Pure props (the locale
- * `t` seat and the `load` callback), so the settings section and the sidebar
- * footer popup render the same body.
+ * list, and a per-model table. Token counts at or above 100 million abbreviate
+ * to 亿 with the exact value on the native title tooltip. Pure props (the
+ * locale `t` seat and the `load` callback), so the settings section and the
+ * sidebar footer popup render the same body.
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { UsageRange, UsageReport } from '../types.ts'
 import { NS, type UsageKey } from './locales.ts'
@@ -24,6 +25,9 @@ export type UsagePanelProps = {
 } & UsagePanelFace
 
 const DAY_MS = 24 * 60 * 60 * 1000
+
+/** One hundred million: token counts at or above this abbreviate to 亿. */
+const YI = 100_000_000
 
 type Preset = '7d' | '14d' | '30d' | 'custom'
 
@@ -57,13 +61,6 @@ function fmt(value: number): string {
   return value.toLocaleString()
 }
 
-function fmtDate(time: number): string {
-  const d = new Date(time)
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}-${month}-${day}`
-}
-
 /**
  * Render the usage-statistics body.
  * @param props - the locale seat and the load callback.
@@ -77,7 +74,6 @@ export function UsagePanel({ t, load }: UsagePanelProps): ReactNode {
   const [result, setResult] = useState<UsageReport | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [filter, setFilter] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -91,11 +87,6 @@ export function UsagePanel({ t, load }: UsagePanelProps): ReactNode {
   }, [preset, customFrom, customTo, nonce, load])
 
   const maxDayTotal = result === null ? 1 : Math.max(1, ...result.byDay.map(day => day.total))
-  const tasks = useMemo(() => {
-    if (result === null || filter === '') return result?.byTask ?? []
-    const needle = filter.toLowerCase()
-    return result.byTask.filter(row => `${row.title ?? ''} ${row.sessionId}`.toLowerCase().includes(needle))
-  }, [result, filter])
 
   const presets: Array<[Preset, string]> = [
     ['7d', t('presets.7d')],
@@ -104,14 +95,35 @@ export function UsagePanel({ t, load }: UsagePanelProps): ReactNode {
     ['custom', t('presets.custom')],
   ]
 
-  const cards: Array<[string, number | undefined]> = [
-    [t('totalTokens'), result?.totals.total],
-    [t('input'), result?.totals.input],
-    [t('output'), result?.totals.output],
-    [t('cacheRead'), result?.totals.cacheRead],
-    [t('cacheWrite'), result?.totals.cacheWrite],
-    [t('requests'), result?.totals.requests],
-    [t('sessions'), result?.totals.sessions],
+  const cacheHitRate = (): number | undefined => {
+    const totals = result?.totals
+    if (totals === undefined) return undefined
+    const totalInput = totals.input + totals.cacheRead
+    if (totalInput <= 0) return undefined
+    return (totals.cacheRead / totalInput) * 100
+  }
+  const percent = (value: number): string => `${value.toFixed(1)}%`
+  // Token counts at or above 100 million render as an 亿 abbreviation; the
+  // exact value stays available in the native title tooltip.
+  const yiUnit = t('unit.yi')
+  const fmtTokens = (value: number): string => {
+    if (value < YI) return fmt(value)
+    return `${Number((value / YI).toFixed(2))}${yiUnit}`
+  }
+  const cards: Array<{
+    label: string
+    value: number | undefined
+    format?: (value: number) => string
+    title?: (value: number) => string
+  }> = [
+    { label: t('totalTokens'), value: result?.totals.total, format: fmtTokens, title: fmt },
+    { label: t('input'), value: result?.totals.input, format: fmtTokens, title: fmt },
+    { label: t('output'), value: result?.totals.output, format: fmtTokens, title: fmt },
+    { label: t('cacheHitRate'), value: cacheHitRate(), format: percent },
+    { label: t('cacheRead'), value: result?.totals.cacheRead, format: fmtTokens, title: fmt },
+    { label: t('cacheWrite'), value: result?.totals.cacheWrite, format: fmtTokens, title: fmt },
+    { label: t('requests'), value: result?.totals.requests },
+    { label: t('sessions'), value: result?.totals.sessions },
   ]
 
   return (
@@ -157,10 +169,15 @@ export function UsagePanel({ t, load }: UsagePanelProps): ReactNode {
       {error !== null && <div className={css.error}>{t('error')}: {error}</div>}
 
       <div className={css.cards}>
-        {cards.map(([label, value]) => (
+        {cards.map(({ label, value, format, title }) => (
           <div key={label} className={css.card}>
             <div className={css.cardLabel}>{label}</div>
-            <div className={css.cardValue}>{value === undefined ? '—' : fmt(value)}</div>
+            <div
+              className={css.cardValue}
+              title={value !== undefined && title !== undefined ? title(value) : undefined}
+            >
+              {value === undefined ? '—' : (format ?? fmt)(value)}
+            </div>
           </div>
         ))}
       </div>
@@ -177,7 +194,7 @@ export function UsagePanel({ t, load }: UsagePanelProps): ReactNode {
                   <div className={css.dayTrack}>
                     <div className={css.dayFill} style={{ width: `${Math.round((day.total / maxDayTotal) * 100)}%` }} />
                   </div>
-                  <span className={css.dayValue}>{fmt(day.total)}</span>
+                  <span className={css.dayValue} title={fmt(day.total)}>{fmtTokens(day.total)}</span>
                   <span className={css.dayMeta}>{fmt(day.requests)} {t('requests')}</span>
                 </div>
               ))}
@@ -186,22 +203,14 @@ export function UsagePanel({ t, load }: UsagePanelProps): ReactNode {
       </div>
 
       <div className={css.block}>
-        <div className={css.blockTitle}>{t('byTask')}</div>
-        <input
-          type="search"
-          className={`${css.input} ${css.search}`}
-          placeholder={t('search')}
-          value={filter}
-          onChange={(event) => { setFilter(event.target.value) }}
-        />
-        {result === null || tasks.length === 0
+        <div className={css.blockTitle}>{t('byModel')}</div>
+        {result === null || result.byModel.length === 0
           ? <div className={css.empty}>{t('empty')}</div>
           : (
             <table className={css.table}>
               <thead>
                 <tr>
-                  <th>{t('task')}</th>
-                  <th>{t('date')}</th>
+                  <th>{t('model')}</th>
                   <th className={css.num}>{t('requests')}</th>
                   <th className={css.num}>{t('input')}</th>
                   <th className={css.num}>{t('output')}</th>
@@ -210,15 +219,14 @@ export function UsagePanel({ t, load }: UsagePanelProps): ReactNode {
                 </tr>
               </thead>
               <tbody>
-                {tasks.map(row => (
-                  <tr key={row.sessionId}>
-                    <td className={css.taskCell} title={row.title ?? undefined}>{row.title ?? t('noTitle')}</td>
-                    <td>{fmtDate(row.createdAt)}</td>
+                {result.byModel.map(row => (
+                  <tr key={`${row.provider}/${row.model}`}>
+                    <td className={css.modelCell} title={`${row.provider} / ${row.model}`}>{row.provider} / {row.model}</td>
                     <td className={css.num}>{fmt(row.requests)}</td>
-                    <td className={css.num}>{fmt(row.input)}</td>
-                    <td className={css.num}>{fmt(row.output)}</td>
-                    <td className={css.num}>{fmt(row.cacheRead)}</td>
-                    <td className={css.num}>{fmt(row.total)}</td>
+                    <td className={css.num} title={fmt(row.input)}>{fmtTokens(row.input)}</td>
+                    <td className={css.num} title={fmt(row.output)}>{fmtTokens(row.output)}</td>
+                    <td className={css.num} title={fmt(row.cacheRead)}>{fmtTokens(row.cacheRead)}</td>
+                    <td className={css.num} title={fmt(row.total)}>{fmtTokens(row.total)}</td>
                   </tr>
                 ))}
               </tbody>

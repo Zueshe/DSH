@@ -1,6 +1,7 @@
 /**
  * Client controller: builds the same-origin usage route URL and fetches the
- * JSON report, surfacing non-2xx responses as typed errors.
+ * JSON report, surfacing non-2xx responses as typed errors and defaulting
+ * sections an older host process omits.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -26,7 +27,7 @@ describe('UsageStatsController', () => {
     const report: UsageReport = {
       from: 0, to: 1,
       totals: { input: 1, output: 2, cacheRead: 0, cacheWrite: 0, total: 3, requests: 1, sessions: 1 },
-      byDay: [], byTask: [], failedSessions: 0, scanned: 1,
+      byDay: [], byModel: [], byTask: [], failedSessions: 0, scanned: 1,
     }
     const fetcher = async () => new Response(JSON.stringify(report), { status: 200 })
     const controller = new UsageStatsController(fetcher)
@@ -36,5 +37,17 @@ describe('UsageStatsController', () => {
     const fetcher = async () => new Response('boom', { status: 503 })
     const controller = new UsageStatsController(fetcher)
     await expect(controller.query({ from: 0, to: 1 })).rejects.toThrow('HTTP 503 boom')
+  })
+  it('defaults byModel when an older host serves the report without it', async () => {
+    const olderHostReport = {
+      from: 0, to: 1,
+      totals: { input: 1, output: 2, cacheRead: 0, cacheWrite: 0, total: 3, requests: 1, sessions: 1 },
+      byDay: [], byTask: [], failedSessions: 0, scanned: 1,
+    }
+    const fetcher = async () => new Response(JSON.stringify(olderHostReport), { status: 200 })
+    const controller = new UsageStatsController(fetcher)
+    const report = await controller.query({ from: 0, to: 1 })
+    expect(report.byModel).toEqual([])
+    expect(report.totals.total).toBe(3)
   })
 })

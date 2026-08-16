@@ -4,10 +4,17 @@
  * @module @deepseek-ai/dsh-session-usage/client/controller
  */
 
-import type { UsageRange, UsageReport } from '../types.ts'
+import type { UsageModelRow, UsageRange, UsageReport } from '../types.ts'
 
 /** Replaceable fetch carrier, defaulting to the browser global. */
 export type UsageFetch = (input: string | URL, init?: RequestInit) => Promise<Response>
+
+/**
+ * Wire shape of the usage route. The host process may predate the newest
+ * report section, so fields the route added later read as optional here; the
+ * controller defaults them instead of trusting a same-version host.
+ */
+type UsageReportWire = Omit<UsageReport, 'byModel'> & { byModel?: UsageModelRow[] }
 
 /**
  * Resolve the browser's Host base with the connection carrier's null-origin fallback.
@@ -44,7 +51,7 @@ export class UsageStatsController {
   /**
    * Fetch the usage report for one range.
    * @param range - inclusive timestamp bounds.
-   * @returns the parsed report, or throws on a non-2xx response.
+   * @returns the parsed report with later-added sections defaulted, or throws on a non-2xx response.
    */
   async query(range: UsageRange): Promise<UsageReport> {
     const response = await this.fetcher(usageRouteUrl(range))
@@ -52,6 +59,7 @@ export class UsageStatsController {
       const detail = await response.text().catch(() => '')
       throw new Error(`Usage query failed: HTTP ${response.status}${detail === '' ? '' : ` ${detail}`}`)
     }
-    return response.json() as Promise<UsageReport>
+    const wire = await response.json() as UsageReportWire
+    return { ...wire, byModel: wire.byModel ?? [] }
   }
 }

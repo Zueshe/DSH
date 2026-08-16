@@ -15,11 +15,11 @@ Status: implemented
 交付一个仅注册在 `dsh-web-app` bundle 中的双面包 `packages/session/session-usage`（`@deepseek-ai/dsh-session-usage`）：
 
 1. **Host 半区。** 通过既有 `sessionQuery` 服务读取持久化语料库（`listSessions` → 逐会话 `readSession` → `readTitleSnapshots`），在闭区间内折叠 `assistant/message` 事件里的 provider 用量，并在已挂载的 `webServer`（`ctx.get('webServer')`，可选 —— 无 webServer 时本包不做任何事）上注册只读同源 JSON 路由 `/api/session-usage`。单会话读取失败被隔离并计入 `failedSessions`；标题折叠尽力而为。
-2. **浏览器半区。** 注册 `settings.section` 条目（`id: 'usage-stats'`），组件通过一个小控制器拉取路由，渲染时间区间（近 7 / 14 / 30 天或自定义日期对）、汇总卡片（总/输入/输出/缓存读取/缓存写入 tokens、请求数、会话数）、按天柱状列表、以及带搜索过滤的按任务表格。文案经 locale 服务注册（中/英）。该 section 与一个 `sidebar.footer.action` 条目（`id: 'usage-stats'`）共享同一份展示主体与同一个控制器：设置座上方新增页脚触发器，点击弹出渲染同一主体的独立弹窗，任何界面无需进入设置即可查看用量。主体是共享的 `UsagePanel` 组件，section 与页脚入口都是它的薄包装。
+2. **浏览器半区。** 注册 `settings.section` 条目（`id: 'usage-stats'`），组件通过一个小控制器拉取路由，渲染时间区间（近 7 / 14 / 30 天或自定义日期对）、汇总卡片（总/输入/输出/缓存读取/缓存写入 tokens、请求数、会话数、缓存命中率）、按天柱状列表、按模型表格、以及带搜索过滤的按任务表格。文案经 locale 服务注册（中/英）。该 section 与一个 `sidebar.footer.action` 条目（`id: 'usage-stats'`）共享同一份展示主体与同一个控制器：设置座上方新增页脚触发器，点击弹出渲染同一主体的独立弹窗，任何界面无需进入设置即可查看用量。主体是共享的 `UsagePanel` 组件，section 与页脚入口都是它的薄包装。
 
 聚合拆成纯折叠（`aggregate.ts`，直接单测）与语料驱动（`query.ts`，用假的 `SessionQueryEngine` 测试）；路由与其区间解析位于 `index.ts`。
 
-**Token 语义。** `total` 为输入 + 输出 + 缓存读取 + 缓存写入的互不重叠之和，与 `token-meter` 计费口径一致。只统计携带 provider 上报 `usage` 的事件；畸形字段按 0 折叠，与 `session-stats` 守卫一致。按天分桶使用每条被统计事件的主机本地日历日期。
+**Token 语义。** `total` 为输入 + 输出 + 缓存读取 + 缓存写入的互不重叠之和，与 `token-meter` 计费口径一致。只统计携带 provider 上报 `usage` 的事件；畸形字段按 0 折叠，与 `session-stats` 守卫一致。按天分桶使用每条被统计事件的主机本地日历日期。按模型分桶以被统计事件 assistant message 的 `source` 身份（`provider` 加 `model`）为键，两个 provider 服务同一 model id 时保持分开；不可读的身份字段折叠为一行 `unknown/unknown`，行跨会话合并并按 `total` 降序排列。
 
 ## 后果
 
@@ -30,10 +30,10 @@ Status: implemented
 
 ## 测试
 
-- 纯折叠测试：桶求和、区间过滤、防御性畸形用量、空日志、报告装配排序、日期键。
+- 纯折叠测试：桶求和、区间过滤、防御性畸形用量与模型身份、空日志、报告装配排序、日期键。
 - 针对假引擎的语料驱动测试：空语料、标题附加、晚于区间末创建的会话被跳过且不读取、失败读取计数、标题失败被包含。
 - 路由解析测试与客户端控制器测试（URL 形态、2xx 解析、非 2xx 报错）。
-- 组件测试（jsdom）：卡片/按天/按任务渲染、错误呈现、空状态、搜索收窄、`resolveRange` 计算，以及页脚入口（触发器标签、弹窗打开、经关闭按钮/遮罩/Escape 关闭）。
+- 组件测试（jsdom）：卡片/按天/按模型/按任务渲染、错误呈现、空状态、搜索收窄、`resolveRange` 计算，以及页脚入口（触发器标签、弹窗打开、经关闭按钮/遮罩/Escape 关闭）。
 
 ## 备选方案
 

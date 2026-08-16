@@ -20,6 +20,7 @@ function report(): UsageReport {
     to: 1,
     totals: { input: 100, output: 20, cacheRead: 300, cacheWrite: 0, total: 420, requests: 3, sessions: 2 },
     byDay: [{ date: '2026-08-14', input: 100, output: 20, cacheRead: 300, cacheWrite: 0, requests: 3, total: 420 }],
+    byModel: [{ provider: 'deepseek', model: 'deepseek-chat', input: 80, output: 10, cacheRead: 200, cacheWrite: 0, total: 290, requests: 2 }],
     byTask: [{ sessionId: 'a', title: '大任务', createdAt: 0, input: 80, output: 10, cacheRead: 200, cacheWrite: 0, total: 290, requests: 2 }],
     failedSessions: 0,
     scanned: 1,
@@ -48,7 +49,7 @@ describe('UsageFooterAction', () => {
     renderAction()
     fireEvent.click(screen.getByRole('button', { name: en.nav }))
     expect(screen.getByRole('dialog', { name: en.title })).toBeTruthy()
-    await waitFor(() => { expect(screen.getByText('大任务')).toBeTruthy() })
+    await waitFor(() => { expect(screen.getByText('2026-08-14')).toBeTruthy() })
   })
 
   it('closes via the popup close button', async () => {

@@ -8,6 +8,7 @@
   "files": [
     "src/client/index.ts",
     "src/client/controller.ts",
+    "src/client/ConnectPhoneFooterAction.tsx",
     "src/client/UsagePanel.tsx",
     "src/client/UsageSection.tsx",
     "src/client/UsageFooterAction.tsx",

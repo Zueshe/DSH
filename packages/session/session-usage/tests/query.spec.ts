@@ -20,12 +20,12 @@ function record(id: string, createdAt?: number): SessionRecord {
   return { header: header(id, createdAt), live: false, persisted: true }
 }
 
-function usageEvent(time: number): SessionEvent {
+function usageEvent(time: number, model = 'mock'): SessionEvent {
   return {
     type: 'assistant/message',
     seq: 0,
     time,
-    data: { turn: 0, step: 0, message: { role: 'assistant', content: [], source: { kind: 'model', provider: 'mock', model: 'mock' } }, usage: { inputTokens: 10, outputTokens: 2 } },
+    data: { turn: 0, step: 0, message: { role: 'assistant', content: [], source: { kind: 'model', provider: 'mock', model } }, usage: { inputTokens: 10, outputTokens: 2 } },
     surfaceOp: 'append',
     sourceEventSeqs: [],
   } as unknown as SessionEvent
@@ -82,11 +82,11 @@ describe('collectUsageReport', () => {
     expect(report.byTask).toEqual([])
   })
 
-  it('folds usage, attaches titles, and counts sessions', async () => {
+  it('folds usage, attaches titles, counts sessions, and breaks out models', async () => {
     const fake = makeFake()
     fake.sessions = [record('a'), record('b')]
-    fake.logs.set('a', log('a', [usageEvent(FROM + 1000)]))
-    fake.logs.set('b', log('b', [usageEvent(FROM + 2000), usageEvent(FROM + 3000)]))
+    fake.logs.set('a', log('a', [usageEvent(FROM + 1000, 'deepseek-chat')]))
+    fake.logs.set('b', log('b', [usageEvent(FROM + 2000, 'deepseek-reasoner'), usageEvent(FROM + 3000, 'deepseek-reasoner')]))
     fake.titles.set('a', '任务A')
     fake.titles.set('b', null)
 
@@ -95,6 +95,9 @@ describe('collectUsageReport', () => {
     expect(report.totals.sessions).toBe(2)
     expect(report.totals.requests).toBe(3)
     expect(report.totals.total).toBe(3 * 12)
+    expect(report.byModel.map(row => row.model)).toEqual(['deepseek-reasoner', 'deepseek-chat'])
+    expect(report.byModel[0]).toMatchObject({ provider: 'mock', model: 'deepseek-reasoner', total: 24, requests: 2 })
+    expect(report.byModel[1]).toMatchObject({ provider: 'mock', model: 'deepseek-chat', total: 12, requests: 1 })
     expect(report.byTask.map(row => row.sessionId)).toEqual(['b', 'a'])
     expect(report.byTask[0]?.title).toBeNull()
     expect(report.byTask[1]?.title).toBe('任务A')
