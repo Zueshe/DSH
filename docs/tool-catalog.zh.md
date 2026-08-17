@@ -41,6 +41,7 @@
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`、`owning Agent session` | `tool/call`、`todo/write`、`tool/result` | - | todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为检查清单。`allowParallelInProgress` 是没有默认值的必填项，因此本目录明确选择 `true`，对应描述允许同时存在多个 `in_progress` 项。选择 `false` 的部署会获得同一工具，但描述会要求只能有 1 个活动任务。 |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`、`ctx.workflowEngine`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents the script children)` | `tool/call`、`tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`、`web_search` | `ctx.tools`、`ctx.web`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。 |
+| `@deepseek-ai/dsh-tool-computer-use` | `computer_use` | `ctx.tools`、`ctx.computerUse (execution time)`、`ctx.attachments`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | computer_use 经由 ctx.computerUse 驱动共享界面，并将每次观察结果附加为持久图片，因此更换 provider 时 schema 保持稳定。 |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -1876,3 +1877,52 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 来源：[`packages/web/tool-web/src/index.ts`](../packages/web/tool-web/src/index.ts)
 
 web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。
+
+<a id="deepseek-aidsh-tool-computer-use"></a>
+
+## `@deepseek-ai/dsh-tool-computer-use`
+
+### `computer_use`
+
+驱动可控的浏览器界面。每个操作都返回操作后的截图（作为图片）、页面 URL 与页面标题。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "The action to perform.",
+      "enum": [
+        "navigate",
+        "screenshot",
+        "click",
+        "type"
+      ]
+    },
+    "url": {
+      "type": "string",
+      "description": "Absolute http(s) URL; required for action \"navigate\"."
+    },
+    "x": {
+      "type": "integer",
+      "description": "Viewport X coordinate; required for action \"click\"."
+    },
+    "y": {
+      "type": "integer",
+      "description": "Viewport Y coordinate; required for action \"click\"."
+    },
+    "text": {
+      "type": "string",
+      "description": "Text to type into the focused element; required for action \"type\"."
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+来源：[`packages/computer/tool-computer-use/src/index.ts`](../packages/computer/tool-computer-use/src/index.ts)
+
+computer_use 经由 ctx.computerUse 驱动共享界面，并将每次观察结果附加为持久图片，因此更换 provider 时 schema 保持稳定。

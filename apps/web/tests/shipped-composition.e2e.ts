@@ -35,6 +35,7 @@ const FILE_REFERENCE_PROMPT = fileURLToPath(new URL(
 const EXPECTED_TOOLS = [
   'ask_user_question',
   'bash',
+  'computer_use',
   'create_goal',
   'edit',
   'exit_plan_mode',

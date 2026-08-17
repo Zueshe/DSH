@@ -497,6 +497,37 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'computerUse',
+    summary: 'The computer-use service.',
+    description: 'The computer-use service. Registered as `ctx.computerUse` (one instance per context). Implementations own one shared surface; actions are sequential by contract because they mutate that shared state.',
+    methods: [
+      {
+        signature: 'abstract navigate(url: string, signal?: AbortSignal): Promise<ComputerObservation>',
+        description: 'Drive the surface to an absolute address.',
+        parameters: [{ name: 'url', description: 'absolute URL the provider understands.' }, { name: 'signal', description: 'optional cancellation for the navigation and observation work.' }],
+        returns: 'the post-navigation observation.',
+      },
+      {
+        signature: 'abstract observe(signal?: AbortSignal): Promise<ComputerObservation>',
+        description: 'Observe the current surface without acting.',
+        parameters: [{ name: 'signal', description: 'optional cancellation for the observation work.' }],
+        returns: 'the current observation.',
+      },
+      {
+        signature: 'abstract click(point: ComputerPoint, signal?: AbortSignal): Promise<ComputerObservation>',
+        description: 'Click one point on the surface.',
+        parameters: [{ name: 'point', description: 'viewport/window location in provider pixels.' }, { name: 'signal', description: 'optional cancellation for the click and observation work.' }],
+        returns: 'the post-click observation.',
+      },
+      {
+        signature: 'abstract type(text: string, signal?: AbortSignal): Promise<ComputerObservation>',
+        description: 'Type text into the surface\'s current focus.',
+        parameters: [{ name: 'text', description: 'keystrokes to send to the focused element.' }, { name: 'signal', description: 'optional cancellation for the typing and observation work.' }],
+        returns: 'the post-typing observation.',
+      },
+    ],
+  },
+  {
     key: 'credentials',
     summary: 'Abstract credential service.',
     description: 'Abstract credential service. Providers implement the four operations over their source layers; one seam-wide rule binds them all: an empty stored value is absent everywhere — `resolve` skips it, `describe` reports it unconfigured — so a blank never masquerades as a configured secret.',
@@ -2820,6 +2851,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'CompactionTrigger',
     declaration: 'export type CompactionTrigger = \'pressure\' | \'context-overflow\';',
+  },
+  {
+    name: 'ComputerObservation',
+    declaration: 'export interface ComputerObservation {\n    screenshot: Uint8Array;\n    url: string;\n    title: string;\n}',
+  },
+  {
+    name: 'ComputerPoint',
+    declaration: 'export interface ComputerPoint {\n    x: number;\n    y: number;\n}',
   },
   {
     name: 'ConfinedArgv',

@@ -249,3 +249,12 @@
   config:
     fetch: false
     searchTimeoutMs: 60000
+
+# Browser computer use over the host-plane Playwright surface. Screenshots
+# return as images, so this row assumes the agent's model route accepts image
+# input; a text-only route makes every observation text-only (set
+# `includeScreenshot: false` here to stop committing images in that case).
+- id: tool-computer-use
+  name: '@deepseek-ai/dsh-tool-computer-use'
+  config:
+    timeoutMs: 60000

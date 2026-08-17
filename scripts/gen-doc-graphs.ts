@@ -488,6 +488,15 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Search and fetch providers register into one ctx.web seam; tool-web owns the stable model-facing names.',
   },
   {
+    key: 'computerUse',
+    pkg: 'computer-use',
+    title: 'Computer-use surface',
+    mode: 'seam',
+    implementations: ['computer-use-playwright'],
+    consumers: ['tool-computer-use'],
+    note: 'One provider supplies the shared controllable surface; tool-computer-use owns the model-facing name and attaches observations as durable images.',
+  },
+  {
     key: 'spillStore',
     pkg: 'spill',
     title: 'Spill storage seam',

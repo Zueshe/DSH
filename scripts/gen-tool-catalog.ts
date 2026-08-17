@@ -60,6 +60,7 @@ import * as ToolTasks from '@deepseek-ai/dsh-tool-jobs'
 import * as ToolTodo from '@deepseek-ai/dsh-tool-todo'
 import * as ToolSubagent from '@deepseek-ai/dsh-tool-subagent'
 import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
+import * as ToolComputerUse from '@deepseek-ai/dsh-tool-computer-use'
 import VmWorkflowEngine from '@deepseek-ai/dsh-workflow-worker-thread'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
 import * as ToolWorkflow from '@deepseek-ai/dsh-tool-workflow'
@@ -550,6 +551,21 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-computer-use',
+    dir: 'tool-computer-use',
+    source: 'packages/computer/tool-computer-use/src/index.ts',
+    requires: ['ctx.tools', 'ctx.computerUse (execution time)', 'ctx.attachments', 'ctx.systemPrompt'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      // The attachment store is a schema-time inject; the Playwright provider
+      // is execution-time only (ctx.get), so the schema needs no browser.
+      await ctx.plugin(CatalogAttachmentStore)
+      await ctx.plugin(ToolComputerUse)
+    },
+    note:
+      'computer_use drives the shared surface through ctx.computerUse and attaches each observation as a durable image, so the schema stays stable across provider swaps.',
   },
 ]
 

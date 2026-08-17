@@ -533,6 +533,28 @@ export interface ToolResultPruneConfig {
 
 来源：[`packages/compaction/compaction-tool-result-pruner/src/types.ts:4`](../packages/compaction/compaction-tool-result-pruner/src/types.ts)
 
+<a id="deepseek-aidsh-computer-use-playwright"></a>
+
+## `@deepseek-ai/dsh-computer-use-playwright`
+
+```ts config-catalog
+/** Provider configuration. */
+export interface Config {
+  /** Launch Chromium headless. Defaults to true. */
+  headless?: boolean
+  /** Viewport width in CSS pixels. Defaults to 1280. */
+  viewportWidth?: number
+  /** Viewport height in CSS pixels. Defaults to 800. */
+  viewportHeight?: number
+  /** Navigation timeout budget (ms). Defaults to 30000. */
+  navigationTimeoutMs?: number
+  /** Bounded network-idle wait after click/type before the screenshot (ms); 0 disables. Defaults to 1500. */
+  settleTimeoutMs?: number
+}
+```
+
+来源：[`packages/computer/computer-use-playwright/src/index.ts:42`](../packages/computer/computer-use-playwright/src/index.ts)
+
 <a id="deepseek-aidsh-cordis-host-runner"></a>
 
 ## `@deepseek-ai/dsh-cordis-host-runner`
@@ -2374,6 +2396,24 @@ export interface Config {
 
 来源：[`packages/shell/tool-bash-persistent/src/index.ts:405`](../packages/shell/tool-bash-persistent/src/index.ts)
 
+<a id="deepseek-aidsh-tool-computer-use"></a>
+
+## `@deepseek-ai/dsh-tool-computer-use`
+
+需要：`tools` · `attachments` · `systemPrompt`
+
+```ts config-catalog
+/** Plugin config: the per-call budget and whether observations return images. */
+export interface Config {
+  /** Cooperative timeout budget (ms) for one `computer_use` call. Defaults to 60000. */
+  timeoutMs?: number
+  /** Commit each observation as a durable image and return it as an image block. Defaults to true. */
+  includeScreenshot?: boolean
+}
+```
+
+来源：[`packages/computer/tool-computer-use/src/index.ts:45`](../packages/computer/tool-computer-use/src/index.ts)
+
 <a id="deepseek-aidsh-tool-fs"></a>
 
 ## `@deepseek-ai/dsh-tool-fs`
@@ -3101,6 +3141,7 @@ export interface Config {
 - `@deepseek-ai/dsh-attachment` — 抽象 `AttachmentStore`（[`packages/attachment/attachment/src/index.ts`](../packages/attachment/attachment/src/index.ts)）
 - `@deepseek-ai/dsh-code-runtime` — 抽象 `CodeRuntime`（[`packages/code-runtime/code-runtime/src/index.ts`](../packages/code-runtime/code-runtime/src/index.ts)）
 - `@deepseek-ai/dsh-compaction` — 抽象 `CompactionEngine`（[`packages/compaction/compaction/src/index.ts`](../packages/compaction/compaction/src/index.ts)）
+- `@deepseek-ai/dsh-computer-use` — 抽象 `ComputerUseService`（[`packages/computer/computer-use/src/index.ts`](../packages/computer/computer-use/src/index.ts)）
 - `@deepseek-ai/dsh-credentials` — 抽象 `Credentials`（[`packages/credentials/credentials/src/index.ts`](../packages/credentials/credentials/src/index.ts)）
 - `@deepseek-ai/dsh-fs` — 抽象 `FileSystem`（[`packages/fs/fs/src/index.ts`](../packages/fs/fs/src/index.ts)）
 - `@deepseek-ai/dsh-host-directory-picker` — 抽象 `DirectoryPicker`（[`packages/host/directory-picker/src/index.ts`](../packages/host/directory-picker/src/index.ts)）

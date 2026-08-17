@@ -417,6 +417,15 @@
         fetch: false
         searchTimeoutMs: 60000
 
+    # Computer use: the Playwright surface is host-plane like `web` above; the
+    # model-facing tool is preset-owned, so profiles that never name it stay
+    # browserless. Chromium launches lazily on the first action, so loading this
+    # row costs nothing until a session actually drives the surface.
+    - id: computer-use-playwright
+      name: '@deepseek-ai/dsh-computer-use-playwright'
+      config:
+        headless: true
+
     # ── rows every mode mounts, whose values each overlay may state ──────────────
 
     # The tool registry. Presentation mode is a deployment choice; omitting it here

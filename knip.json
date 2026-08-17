@@ -365,6 +365,11 @@
         "src/**/*.ts"
       ]
     },
+    "packages/computer/computer-use": {
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
     "packages/util/timeout": {
       "entry": [
         "tests/**/*.spec.ts"
