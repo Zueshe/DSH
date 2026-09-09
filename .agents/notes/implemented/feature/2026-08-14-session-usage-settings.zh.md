@@ -25,7 +25,7 @@ Status: implemented
 
 - 设置页只出现在 web-app 组合中；其他界面没有用量路由或 section。
 - 侧边栏页脚入口为任何界面提供一键直达用量，代价是新增一个导航座，与 section 共用同一个 id（`usage-stats`）——两者分属不同槽位，因此无需避免重名。
-- 浏览用量时每个日志至多在每个存储日志修订下读取一次：重复查询与区间切换直接在缓存的逐请求样本上重折叠，只有变化的日志与活跃会话才以有限并行度（`SESSION_USAGE_READ_CONCURRENCY = 6`）重读 —— 见[修订门控样本缓存 note](../architecture/2026-08-16-session-usage-revision-gated-sample-cache.md)。Host 启动后的首次查询仍会扫描一次区间内语料。
+- 浏览用量时每个日志至多在每个存储日志修订下读取一次：重复查询与区间切换直接在缓存的逐请求样本上重折叠，只有变化的日志与活跃会话才以有限并行度（`SESSION_USAGE_READ_CONCURRENCY = 6`）重读 —— 见[修订门控样本缓存 note](../architecture/2026-08-16-session-usage-revision-gated-sample-cache.zh.md)。Host 启动后的首次查询仍会扫描一次区间内语料。
 - 路由刻意放在 `/api` RPC 信封之外 —— 与 `/api/session.export` 一样是物理无信封 GET，因此新增它没有触碰 `IApiClient`/api-proxy 契约。
 
 ## 测试
@@ -47,6 +47,6 @@ Status: implemented
 
 ## 风险
 
-**冷启动与变化日志的读取线性增长。** Host 启动后的首次查询会读取每个区间内日志一次，每个存储日志变化也会重读该日志；有界池保持单会话有界，报告保持正确。修订门控的进程内缓存（[后续 note](../architecture/2026-08-16-session-usage-revision-gated-sample-cache.md)）覆盖重复查询；若重启频率让冷启动变得重要，持久化检查点缓存仍是后续路径。
+**冷启动与变化日志的读取线性增长。** Host 启动后的首次查询会读取每个区间内日志一次，每个存储日志变化也会重读该日志；有界池保持单会话有界，报告保持正确。修订门控的进程内缓存（[后续 note](../architecture/2026-08-16-session-usage-revision-gated-sample-cache.zh.md)）覆盖重复查询；若重启频率让冷启动变得重要，持久化检查点缓存仍是后续路径。
 
 **按主机本地日期分桶。** 日界线跟随主机时区，GUI 与主机时区不一致时按主机日历分桶；已记录为已知限制。

@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-计算机使用（computer-use）能力缝。`ctx.computerUse` 暴露一个共享的可控界面，包含四个操作——`navigate`、`observe`、`click`、`type`——每个操作都返回完整的操作后观察结果（PNG 截图、界面地址、界面标题）。类型与语义记录在 [docs/subsystems/computer-use.md](../../../docs/subsystems/computer-use.md)。
+计算机使用（computer-use）能力缝。`ctx.computerUse` 暴露一个共享的可控界面，包含四个操作——`navigate`、`observe`、`click`、`type`——每个操作都返回完整的操作后观察结果（PNG 截图、界面地址、界面标题）。类型与语义记录在 [docs/subsystems/computer-use.zh.md](../../../docs/subsystems/computer-use.zh.md)。
 
 本缝没有注册表也没有选择逻辑：每个组合由一个 provider 提供服务，因此 `ctx.computerUse` 解析为该 provider 的实例，或者保持缺失。操作按契约串行，因为它们会修改共享界面。失败以带封闭错误码（`COMPUTER_USE_LAUNCH_FAILED`、`COMPUTER_USE_ACTION_FAILED`）的 `ComputerUseError` 上抛；每个操作都接受可选的取消信号。
 

@@ -6,7 +6,7 @@ Status: implemented
 
 ## Problem
 
-「使用统计」的每次查询——每次打开面板、切换区间、点击刷新——都要重新读取并折叠整个语料库：`collectUsageReport` 先列出会话，以有界并发逐个读取完整日志，随后 `readTitleSnapshots` 又把每个冷会话的日志再加载一遍来折叠标题。每次打开等于两次全量语料扫描，成本随语料规模线性增长，在真实部署上已经明显变慢（[设置功能 note](../feature/2026-08-14-session-usage-settings.md) 当时正是把增量设计推迟到了这个需求出现为止）。
+「使用统计」的每次查询——每次打开面板、切换区间、点击刷新——都要重新读取并折叠整个语料库：`collectUsageReport` 先列出会话，以有界并发逐个读取完整日志，随后 `readTitleSnapshots` 又把每个冷会话的日志再加载一遍来折叠标题。每次打开等于两次全量语料扫描，成本随语料规模线性增长，在真实部署上已经明显变慢（[设置功能 note](../feature/2026-08-14-session-usage-settings.zh.md) 当时正是把增量设计推迟到了这个需求出现为止）。
 
 ## Decision
 

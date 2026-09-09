@@ -24,10 +24,10 @@
       "path": "../../client/locale"
     },
     {
-      "path": "../../client/runtime"
+      "path": "../../client/ui-primitives"
     },
     {
-      "path": "../../client/ui-primitives"
+      "path": "../../client/ui-renderer"
     },
     {
       "path": "../../client/ui-settings"

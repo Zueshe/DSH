@@ -2,7 +2,7 @@
 
 [English](computer-use.md) | 中文
 
-计算机使用（computer-use）能力缝——一个横跨**四个操作**（navigate 导航、observe 观察、click 点击、type 输入）的 [capability seam](../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.md)，落在单个 `ctx.computerUse` 服务上，并拆分为多个包：Service Definition（[dsh-computer-use](../../packages/computer/computer-use)，`ctx.computerUse` 与错误码分类）、Service Provider（[dsh-computer-use-playwright](../../packages/computer/computer-use-playwright)，一个惰性启动、全局共享的 Playwright Chromium 页面）与 Consumer（[dsh-tool-computer-use](../../packages/computer/tool-computer-use)，`computer_use` 工具 schema）。计算机使用是**一个可选能力**，不属于 agent-loop 主干——因此其类型定义放在本页而不是 [core.md](core.md)。更换 provider 不改变模型驱动这个界面的方式。
+计算机使用（computer-use）能力缝——一个横跨**四个操作**（navigate 导航、observe 观察、click 点击、type 输入）的 [capability seam](../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.zh.md)，落在单个 `ctx.computerUse` 服务上，并拆分为多个包：Service Definition（[dsh-computer-use](../../packages/computer/computer-use)，`ctx.computerUse` 与错误码分类）、Service Provider（[dsh-computer-use-playwright](../../packages/computer/computer-use-playwright)，一个惰性启动、全局共享的 Playwright Chromium 页面）与 Consumer（[dsh-tool-computer-use](../../packages/computer/tool-computer-use)，`computer_use` 工具 schema）。计算机使用是**一个可选能力**，不属于 agent-loop 主干——因此其类型定义放在本页而不是 [core.zh.md](core.zh.md)。更换 provider 不改变模型驱动这个界面的方式。
 
 来源：[`packages/computer/computer-use/src/types.ts`](../../packages/computer/computer-use/src/types.ts)
 
@@ -37,7 +37,7 @@ interface ComputerPoint {
 }
 ```
 
-Consumer 通过持久附件服务提交 `screenshot`，并把引用作为 image 块返回，因此字节保存在会话日志之外，而模型可见内容仍可从日志重建（[attachment](attachment.md)）。纯文本模型路由无法携带 image 块；此时 Consumer 的 `includeScreenshot` 配置可停止提交图片，仅保留 URL 与标题文本。
+Consumer 通过持久附件服务提交 `screenshot`，并把引用作为 image 块返回，因此字节保存在会话日志之外，而模型可见内容仍可从日志重建（[attachment.zh.md](attachment.zh.md)）。纯文本模型路由无法携带 image 块；此时 Consumer 的 `includeScreenshot` 配置可停止提交图片，仅保留 URL 与标题文本。
 
 ## 错误码分类
 
@@ -49,7 +49,7 @@ Consumer 通过持久附件服务提交 `screenshot`，并把引用作为 image 
 
 ## Cordis API
 
-Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — this section is byte-identical in both language sides of the page. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
+Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — this section is byte-identical in both language sides of the page. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.zh.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
 
 <a id="ctxcomputeruse--computeruseservice-abstract-seam"></a>
 

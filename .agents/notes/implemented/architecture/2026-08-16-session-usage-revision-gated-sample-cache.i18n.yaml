@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-16-session-usage-revision-gated-sample-cache.md
 2026-08-16-session-usage-revision-gated-sample-cache.md: 7293af6aa36f35270b0f35a2240ff50eb92d3df3
-2026-08-16-session-usage-revision-gated-sample-cache.zh.md: b9d67d0c9f5007474135cdea3b65e3df9149d4e2
+2026-08-16-session-usage-revision-gated-sample-cache.zh.md: 9d1a1e10cf8b489280ef371ecf16d433622ebc9f

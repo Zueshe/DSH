@@ -32,7 +32,7 @@ Prefix-stable while the plugin stays loaded; mounting or disposing it invalidate
 
 #### What the model sees
 
-The model sees the generated [`computer_use` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-computer-use): one `action` enum (`navigate`, `screenshot`, `click`, `type`) plus per-action optional fields (`url`, `x`, `y`, `text`). The timeout budget is a deployment setting, not a model argument.
+The model sees the generated [`computer_use` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-computer-use): one `action` enum (`navigate`, `screenshot`, `click`, `type`) plus per-action optional fields (`url`, `x`, `y`, `text`). The timeout budget is a deployment setting, not a model argument.
 
 #### Token effect
 

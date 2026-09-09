@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/computer-use.md
 computer-use.md: bd28efe2e44f741219e590abf1e6dc9e8647be4c
-computer-use.zh.md: 8ba0cc4e5ee145cbfaf4075d2a927e22d742e1ba
+computer-use.zh.md: 8f1579ef336b54274b6630aa0f2dda61d00d0af8
